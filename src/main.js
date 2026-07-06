@@ -97,10 +97,10 @@ function isDuplicate(contact) {
   const fullName = (contact.fullName || '').trim().toLowerCase()
 
   return state.contacts.some((existing) => {
-    const existingEmails = normalizeEmail(existing.email || '')
-    const existingPhones = normalizePhone(existing.phone || '')
-    const sameEmail = contactEmails.some((email) => existingEmails.some((existingEmail) => existingEmail === email))
-    const samePhone = contactPhones.some((phone) => existingPhones.some((existingPhone) => existingPhone === phone))
+    const existingEmails = new Set(normalizeEmail(existing.email || ''))
+    const existingPhones = new Set(normalizePhone(existing.phone || ''))
+    const sameEmail = contactEmails.some((email) => existingEmails.has(email))
+    const samePhone = contactPhones.some((phone) => existingPhones.has(phone))
     const sameName = fullName && fullName === (existing.fullName || '').trim().toLowerCase()
     return sameEmail || samePhone || sameName
   })
@@ -158,9 +158,9 @@ function renderLastScan() {
   }
 
   lastScan.className = 'details'
-  lastScan.innerHTML = CONTACT_COLUMNS.map((column) => {
-    const value = escapeHtml(state.pendingContact[column] || '—')
-    return `<p><strong>${escapeHtml(column)}</strong>: ${value}</p>`
+  lastScan.innerHTML = CONTACT_COLUMNS.map((fieldName) => {
+    const value = escapeHtml(state.pendingContact[fieldName] || '—')
+    return `<p><strong>${escapeHtml(fieldName)}</strong>: ${value}</p>`
   }).join('')
   addContactButton.disabled = false
 }
