@@ -1,0 +1,24 @@
+{
+  "name": "vCards QR Scanner",
+  "short_name": "vCards",
+  "description": "Scanner de QR codes vCard avec stockage local et export CSV/Excel.",
+  "start_url": "/vcards/",
+  "scope": "/vcards/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "./icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
