@@ -12,6 +12,7 @@ npm run dev
 ## Build GitHub Pages
 
 La base URL est configurée pour GitHub Pages sur `https://sunix.github.io/vcards`.
+Le déploiement est automatisé via `.github/workflows/deploy-pages.yml` sur les pushes de `main`.
 
 ```bash
 npm run build
