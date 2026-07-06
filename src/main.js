@@ -5,6 +5,9 @@ import { CONTACT_COLUMNS, parseVCard } from './vcard'
 
 const STORAGE_KEY = 'vcards.contacts.v1'
 const SCAN_ERROR_THROTTLE_MS = 3000
+const SCAN_FPS = 10
+const SCAN_BOX_SIZE = 220
+const SW_VERSION = '1.0.0'
 
 const state = {
   contacts: [],
@@ -107,7 +110,11 @@ function isDuplicate(contact) {
 }
 
 function escapeCsv(value) {
-  const safe = String(value ?? '')
+  let safe = String(value ?? '')
+  if (/^[=+\-@]/.test(safe)) {
+    safe = `'${safe}`
+  }
+
   if (/[",\n]/.test(safe)) {
     return `"${safe.replace(/"/g, '""')}"`
   }
@@ -237,7 +244,7 @@ async function startScanner() {
 
     await state.scanner.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 220, height: 220 } },
+      { fps: SCAN_FPS, qrbox: { width: SCAN_BOX_SIZE, height: SCAN_BOX_SIZE } },
       handleScanSuccess,
       handleScanError,
     )
@@ -280,8 +287,13 @@ addContactButton.addEventListener('click', () => {
     return
   }
 
+  let contactId = createContactId()
+  while (state.contacts.some((contact) => contact.id === contactId)) {
+    contactId = createContactId()
+  }
+
   state.contacts.unshift({
-    id: createContactId(),
+    id: contactId,
     ...state.pendingContact,
     createdAt: new Date().toISOString(),
   })
@@ -352,7 +364,7 @@ function registerServiceWorker() {
   window.addEventListener('load', async () => {
     try {
       const base = import.meta.env.BASE_URL
-      await navigator.serviceWorker.register(`${base}sw.js`)
+      await navigator.serviceWorker.register(`${base}sw.js?v=${SW_VERSION}`)
     } catch {}
   })
 }

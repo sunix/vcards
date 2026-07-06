@@ -1,4 +1,5 @@
-const CACHE_NAME = 'vcards-cache-v2'
+const SW_VERSION = new URL(self.location.href).searchParams.get('v') || '1'
+const CACHE_NAME = `vcards-cache-${SW_VERSION}`
 
 async function getShellAssets() {
   const shellFiles = new Set(['./', './index.html', './manifest.webmanifest', './icons/icon-192.svg', './icons/icon-512.svg'])
