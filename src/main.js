@@ -12,6 +12,7 @@ const state = {
   scanner: null,
   scanning: false,
   lastScanErrorAt: 0,
+  idCounter: 0,
 }
 
 const app = document.querySelector('#app')
@@ -96,8 +97,10 @@ function isDuplicate(contact) {
   const fullName = (contact.fullName || '').trim().toLowerCase()
 
   return state.contacts.some((existing) => {
-    const sameEmail = contactEmails.some((email) => normalizeEmail(existing.email || '').includes(email))
-    const samePhone = contactPhones.some((phone) => normalizePhone(existing.phone || '').includes(phone))
+    const existingEmails = normalizeEmail(existing.email || '')
+    const existingPhones = normalizePhone(existing.phone || '')
+    const sameEmail = contactEmails.some((email) => existingEmails.some((existingEmail) => existingEmail === email))
+    const samePhone = contactPhones.some((phone) => existingPhones.some((existingPhone) => existingPhone === phone))
     const sameName = fullName && fullName === (existing.fullName || '').trim().toLowerCase()
     return sameEmail || samePhone || sameName
   })
@@ -133,7 +136,8 @@ function createContactId() {
     return `${Date.now().toString(36)}-${randomPart}`
   }
 
-  return `${Date.now().toString(36)}-${performance.now().toString(36).replace('.', '')}`
+  state.idCounter += 1
+  return `${Date.now().toString(36)}-${state.idCounter.toString(36)}-${performance.now().toString(36).replace('.', '')}`
 }
 
 function escapeHtml(value) {
@@ -141,7 +145,7 @@ function escapeHtml(value) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
+    .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 }
 

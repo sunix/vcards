@@ -10,7 +10,10 @@ async function getShellAssets() {
 
     const assetMatches = [...html.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/g)]
       .map((match) => match[1])
-      .filter((url) => url && !url.startsWith('http'))
+      .filter((url) => {
+        if (!url || url.startsWith('http')) return false
+        return url.includes('/assets/') || url.startsWith('./manifest') || url.startsWith('./icons/')
+      })
 
     for (const asset of assetMatches) {
       shellFiles.add(asset)
