@@ -15,7 +15,10 @@ function unescapeVCard(value) {
 }
 
 function parseAddress(rawAddress) {
-  const parts = rawAddress.split(';').map((part) => part.trim()).filter(Boolean)
+  const parts = rawAddress
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => part !== '')
   return parts.join(', ')
 }
 

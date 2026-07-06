@@ -8,7 +8,7 @@ async function getShellAssets() {
     const response = await fetch(indexUrl, { cache: 'no-cache' })
     const html = await response.text()
 
-    const assetMatches = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    const assetMatches = [...html.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/g)]
       .map((match) => match[1])
       .filter((url) => url && !url.startsWith('http'))
 

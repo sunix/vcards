@@ -4,6 +4,7 @@ import zipcelx from 'zipcelx'
 import { CONTACT_COLUMNS, parseVCard } from './vcard'
 
 const STORAGE_KEY = 'vcards.contacts.v1'
+const SCAN_ERROR_THROTTLE_MS = 3000
 
 const state = {
   contacts: [],
@@ -125,7 +126,23 @@ function createContactId() {
     return globalThis.crypto.randomUUID()
   }
 
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16)
+    globalThis.crypto.getRandomValues(bytes)
+    const randomPart = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+    return `${Date.now().toString(36)}-${randomPart}`
+  }
+
+  return `${Date.now().toString(36)}-${performance.now().toString(36).replace('.', '')}`
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 function renderLastScan() {
@@ -138,8 +155,8 @@ function renderLastScan() {
 
   lastScan.className = 'details'
   lastScan.innerHTML = CONTACT_COLUMNS.map((column) => {
-    const value = state.pendingContact[column] || '—'
-    return `<p><strong>${column}</strong>: ${value}</p>`
+    const value = escapeHtml(state.pendingContact[column] || '—')
+    return `<p><strong>${escapeHtml(column)}</strong>: ${value}</p>`
   }).join('')
   addContactButton.disabled = false
 }
@@ -157,12 +174,12 @@ function renderContacts() {
       (contact) => `
       <li class="contact-item">
         <div class="contact-content">
-          <p class="name">${contact.fullName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Sans nom'}</p>
-          <p>${contact.organization || '—'}</p>
-          <p>${contact.email || '—'}</p>
-          <p>${contact.phone || '—'}</p>
+          <p class="name">${escapeHtml(contact.fullName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Sans nom')}</p>
+          <p>${escapeHtml(contact.organization || '—')}</p>
+          <p>${escapeHtml(contact.email || '—')}</p>
+          <p>${escapeHtml(contact.phone || '—')}</p>
         </div>
-        <button type="button" class="danger delete-contact" data-id="${contact.id}">Supprimer</button>
+        <button type="button" class="danger delete-contact" data-id="${escapeHtml(contact.id)}">Supprimer</button>
       </li>
     `,
     )
@@ -191,7 +208,7 @@ async function handleScanSuccess(decodedText) {
 
 function handleScanError(errorMessage) {
   const now = Date.now()
-  if (now - state.lastScanErrorAt < 3000) return
+  if (now - state.lastScanErrorAt < SCAN_ERROR_THROTTLE_MS) return
   state.lastScanErrorAt = now
 
   const message = String(errorMessage || '')
@@ -200,7 +217,7 @@ function handleScanError(errorMessage) {
 }
 
 async function startScanner() {
-  if (!('mediaDevices' in navigator) || typeof Html5Qrcode === 'undefined') {
+  if (!('mediaDevices' in navigator)) {
     updateStatus('Navigateur non compatible avec le scan caméra.', true)
     return
   }
