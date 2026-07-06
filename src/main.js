@@ -10,6 +10,7 @@ const state = {
   pendingContact: null,
   scanner: null,
   scanning: false,
+  lastScanErrorAt: 0,
 }
 
 const app = document.querySelector('#app')
@@ -119,6 +120,14 @@ function downloadBlob(content, mimeType, fileName) {
   URL.revokeObjectURL(url)
 }
 
+function createContactId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID()
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 function renderLastScan() {
   if (!state.pendingContact) {
     lastScan.className = 'empty'
@@ -180,7 +189,14 @@ async function handleScanSuccess(decodedText) {
   }
 }
 
-function handleScanError() {
+function handleScanError(errorMessage) {
+  const now = Date.now()
+  if (now - state.lastScanErrorAt < 3000) return
+  state.lastScanErrorAt = now
+
+  const message = String(errorMessage || '')
+  if (message.toLowerCase().includes('notfound')) return
+  updateStatus('Impossible de lire le QR code pour le moment. Repositionnez la caméra.', true)
 }
 
 async function startScanner() {
@@ -244,7 +260,7 @@ addContactButton.addEventListener('click', () => {
   }
 
   state.contacts.unshift({
-    id: crypto.randomUUID(),
+    id: createContactId(),
     ...state.pendingContact,
     createdAt: new Date().toISOString(),
   })

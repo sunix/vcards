@@ -40,7 +40,7 @@ export function parseVCard(rawText) {
   }
 
   if (!VCARD_VERSION.some((version) => upperText.includes(version))) {
-    throw new Error('Le QR code ne contient pas une vCard valide.')
+    throw new Error('Version vCard non supportée (3.0 ou 4.0 attendue).')
   }
 
   const lines = normalizedText.split('\n').map((line) => line.trim()).filter(Boolean)

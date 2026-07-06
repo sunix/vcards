@@ -1,10 +1,32 @@
-const CACHE_NAME = 'vcards-cache-v1'
+const CACHE_NAME = 'vcards-cache-v2'
+
+async function getShellAssets() {
+  const shellFiles = new Set(['./', './index.html', './manifest.webmanifest', './icons/icon-192.svg', './icons/icon-512.svg'])
+
+  try {
+    const indexUrl = new URL('./index.html', self.registration.scope).toString()
+    const response = await fetch(indexUrl, { cache: 'no-cache' })
+    const html = await response.text()
+
+    const assetMatches = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((url) => url && !url.startsWith('http'))
+
+    for (const asset of assetMatches) {
+      shellFiles.add(asset)
+    }
+  } catch {}
+
+  return [...shellFiles]
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(['./', './index.html', './manifest.webmanifest', './icons/icon-192.svg', './icons/icon-512.svg']),
-    ),
+    (async () => {
+      const assets = await getShellAssets()
+      const cache = await caches.open(CACHE_NAME)
+      await cache.addAll(assets)
+    })(),
   )
   self.skipWaiting()
 })
