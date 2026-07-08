@@ -237,6 +237,10 @@ function handleScanError(_errorMessage) {
   // avant même d'avoir pointé la caméra vers un QR code.
 }
 
+function updateZoomLabel(value) {
+  zoomValueLabel.textContent = `${parseFloat(value).toFixed(1)}×`
+}
+
 async function startScanner() {
   if (!('mediaDevices' in navigator)) {
     updateStatus('Navigateur non compatible avec le scan caméra.', true)
@@ -272,7 +276,7 @@ async function startScanner() {
         zoomSlider.max = max
         zoomSlider.step = step ?? 0.1
         zoomSlider.value = min
-        zoomValueLabel.textContent = `${min}×`
+        updateZoomLabel(min)
         zoomControl.hidden = false
       }
     } catch {
@@ -312,7 +316,7 @@ scanRestart.addEventListener('click', async () => {
 
 zoomSlider.addEventListener('input', async () => {
   const value = parseFloat(zoomSlider.value)
-  zoomValueLabel.textContent = `${value.toFixed(1)}×`
+  updateZoomLabel(value)
   if (state.scanner && state.scanning) {
     try {
       await state.scanner.applyVideoConstraints({ zoom: value })
