@@ -23,8 +23,15 @@ app.innerHTML = `
     <p class="privacy">Les contacts sont stockés localement dans ce navigateur. Aucune donnée n’est envoyée à un serveur.</p>
 
     <section class="card controls">
-      <button id="scan-toggle" type="button">Lancer le scan</button>
+      <div class="scan-buttons">
+        <button id="scan-toggle" type="button">Lancer le scan</button>
+        <button id="scan-restart" type="button" hidden>Relancer le scan</button>
+      </div>
       <p id="scan-status" class="status" role="status">Prêt à scanner.</p>
+      <div id="zoom-control" class="zoom-control" hidden>
+        <label for="zoom-slider">Zoom : <span id="zoom-value">1×</span></label>
+        <input id="zoom-slider" type="range" min="1" max="5" step="0.1" value="1">
+      </div>
       <div id="reader" class="reader" aria-live="polite"></div>
     </section>
 
@@ -50,6 +57,10 @@ app.innerHTML = `
 
 const scanStatus = document.querySelector('#scan-status')
 const scanToggle = document.querySelector('#scan-toggle')
+const scanRestart = document.querySelector('#scan-restart')
+const zoomControl = document.querySelector('#zoom-control')
+const zoomSlider = document.querySelector('#zoom-slider')
+const zoomValueLabel = document.querySelector('#zoom-value')
 const addContactButton = document.querySelector('#add-contact')
 const lastScan = document.querySelector('#last-scan')
 const contactList = document.querySelector('#contact-list')
@@ -201,6 +212,9 @@ async function stopScanner() {
   await state.scanner.clear()
   state.scanning = false
   scanToggle.textContent = 'Lancer le scan'
+  scanRestart.hidden = true
+  zoomControl.hidden = true
+  zoomSlider.value = 1
 }
 
 async function handleScanSuccess(decodedText) {
@@ -247,7 +261,23 @@ async function startScanner() {
 
     state.scanning = true
     scanToggle.textContent = 'Arrêter le scan'
+    scanRestart.hidden = false
     updateStatus('Scan en cours…')
+
+    try {
+      const capabilities = state.scanner.getRunningTrackCapabilities()
+      if (capabilities?.zoom) {
+        const { min, max, step } = capabilities.zoom
+        zoomSlider.min = min
+        zoomSlider.max = max
+        zoomSlider.step = step ?? 0.1
+        zoomSlider.value = min
+        zoomValueLabel.textContent = `${min}×`
+        zoomControl.hidden = false
+      }
+    } catch {
+      // Zoom not supported on this device/browser
+    }
   } catch (error) {
     const message = String(error?.message || error)
 
@@ -273,6 +303,23 @@ scanToggle.addEventListener('click', async () => {
   }
 
   await startScanner()
+})
+
+scanRestart.addEventListener('click', async () => {
+  await stopScanner()
+  await startScanner()
+})
+
+zoomSlider.addEventListener('input', async () => {
+  const value = parseFloat(zoomSlider.value)
+  zoomValueLabel.textContent = `${value.toFixed(1)}×`
+  if (state.scanner && state.scanning) {
+    try {
+      await state.scanner.applyVideoConstraints({ zoom: value })
+    } catch {
+      // Zoom constraint not applied — ignore silently
+    }
+  }
 })
 
 addContactButton.addEventListener('click', () => {

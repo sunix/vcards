@@ -45,6 +45,27 @@ h2 {
   gap: 10px;
 }
 
+.scan-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zoom-control {
+  display: grid;
+  gap: 4px;
+}
+
+.zoom-control label {
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.zoom-control input[type='range'] {
+  width: 100%;
+  accent-color: #2563eb;
+}
+
 .reader {
   min-height: 180px;
   border: 1px dashed #c8d4e3;
