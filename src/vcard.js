@@ -1,8 +1,30 @@
 const VCARD_REQUIRED = ['BEGIN:VCARD', 'END:VCARD']
-const VCARD_VERSION = ['VERSION:3.0', 'VERSION:4.0']
+const VCARD_VERSION = ['VERSION:2.1', 'VERSION:3.0', 'VERSION:4.0']
 
 function unfoldVCard(text) {
-  return text.replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '')
+  return text
+    .replace(/=\r\n/g, '')   // vCard 2.1 QUOTED-PRINTABLE soft line break
+    .replace(/\r\n/g, '\n')  // normalise CRLF → LF
+    .replace(/\n[ \t]/g, '') // vCard 3.0/4.0 folded line continuation
+}
+
+function decodeQuotedPrintable(str) {
+  const bytes = []
+  let i = 0
+  while (i < str.length) {
+    if (str[i] === '=' && i + 2 <= str.length - 1 && /^[0-9A-Fa-f]{2}$/.test(str.slice(i + 1, i + 3))) {
+      bytes.push(parseInt(str.slice(i + 1, i + 3), 16))
+      i += 3
+    } else {
+      bytes.push(str.charCodeAt(i))
+      i++
+    }
+  }
+  try {
+    return new TextDecoder('utf-8').decode(new Uint8Array(bytes))
+  } catch {
+    return str
+  }
 }
 
 function unescapeVCard(value) {
@@ -43,7 +65,7 @@ export function parseVCard(rawText) {
   }
 
   if (!VCARD_VERSION.some((version) => upperText.includes(version))) {
-    throw new Error('Version vCard non supportée (3.0 ou 4.0 attendue).')
+    throw new Error('Version vCard non supportée (2.1, 3.0 ou 4.0 attendue).')
   }
 
   const lines = normalizedText.split('\n').map((line) => line.trim()).filter(Boolean)
@@ -67,7 +89,9 @@ export function parseVCard(rawText) {
     }
 
     const keyWithMeta = line.slice(0, separator)
-    const value = unescapeVCard(line.slice(separator + 1))
+    const rawValue = line.slice(separator + 1)
+    const isQP = keyWithMeta.toUpperCase().includes('ENCODING=QUOTED-PRINTABLE')
+    const value = unescapeVCard(isQP ? decodeQuotedPrintable(rawValue) : rawValue)
     const key = keyWithMeta.split(';')[0].toUpperCase()
 
     if (!value) {

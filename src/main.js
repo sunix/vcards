@@ -4,7 +4,6 @@ import zipcelx from 'zipcelx'
 import { CONTACT_COLUMNS, parseVCard } from './vcard'
 
 const STORAGE_KEY = 'vcards.contacts.v1'
-const SCAN_ERROR_THROTTLE_MS = 3000
 const SCAN_FPS = 10
 const SCAN_BOX_SIZE = 220
 const SW_VERSION = '1.0.0'
@@ -14,7 +13,6 @@ const state = {
   pendingContact: null,
   scanner: null,
   scanning: false,
-  lastScanErrorAt: 0,
   idCounter: 0,
 }
 
@@ -217,14 +215,12 @@ async function handleScanSuccess(decodedText) {
   }
 }
 
-function handleScanError(errorMessage) {
-  const now = Date.now()
-  if (now - state.lastScanErrorAt < SCAN_ERROR_THROTTLE_MS) return
-  state.lastScanErrorAt = now
-
-  const message = String(errorMessage || '')
-  if (message.toLowerCase().includes('notfound')) return
-  updateStatus('Impossible de lire le QR code pour le moment. Repositionnez la caméra.', true)
+function handleScanError(_errorMessage) {
+  // Ce callback est appelé pour chaque frame sans QR code détectable : c'est un comportement
+  // normal du scanner. Les vraies erreurs matérielles (permission caméra, flux interrompu)
+  // font rejeter la promesse start() et sont gérées dans le catch de startScanner().
+  // On ne met pas à jour le statut ici pour éviter d'afficher un faux message d'erreur
+  // avant même d'avoir pointé la caméra vers un QR code.
 }
 
 async function startScanner() {
